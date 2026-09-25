@@ -1,6 +1,8 @@
 import { cn } from "@/utils/cn"
+import { useAuth } from "@/hooks/useAuth"
 import { useAuthStore } from "@/store/authStore"
 import { useUIStore } from "@/store/uiStore"
+import { useToast } from "@/store/toastStore"
 import { APP_NAME, ROLES } from "@/utils/constants"
 import {
   Activity,
@@ -12,7 +14,7 @@ import {
   CheckSquare,
   X,
 } from "lucide-react"
-import { NavLink } from "react-router-dom"
+import { NavLink, useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 
 const navItems = [
@@ -29,12 +31,26 @@ const adminItems = [
 
 export function Sidebar() {
   const { sidebarOpen, setSidebarOpen } = useUIStore()
-  const { user, logout } = useAuthStore()
+  const { user } = useAuthStore()
+  const { logout } = useAuth()
+  const { success } = useToast()
+  const navigate = useNavigate()
 
   const role = user?.role || ROLES.DEVELOPER
 
   const filteredNav = navItems.filter((item) => item.roles.includes(role))
   const filteredAdmin = adminItems.filter((item) => item.roles.includes(role))
+
+  const handleLogout = async () => {
+    try {
+      await logout()
+      success("Logged out", "You have been signed out successfully")
+      navigate("/login", { replace: true })
+    } catch {
+      // Even if fails, redirect
+      navigate("/login", { replace: true })
+    }
+  }
 
   return (
     <>
@@ -131,6 +147,7 @@ export function Sidebar() {
           <div className="space-y-1">
             <NavLink
               to="/profile"
+              onClick={() => setSidebarOpen(false)}
               className={({ isActive }) =>
                 cn(
                   "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
@@ -144,7 +161,7 @@ export function Sidebar() {
               Settings
             </NavLink>
             <button
-              onClick={() => logout()}
+              onClick={handleLogout}
               className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground"
             >
               <LogOut className="h-4 w-4" />
